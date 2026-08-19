@@ -1,0 +1,48 @@
+[project]
+name = "nowcasting-inflacao"
+version = "0.1.0"
+description = "Replace with a one-line project description."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "YOUR_NAME" }]
+dependencies = [
+    "pydantic>=2.9",
+    "pydantic-settings>=2.5",
+    "numpy>=1.26",
+    "psycopg[binary]>=3.2",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.11",
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "testcontainers[postgres]>=4.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nowcasting_inflacao"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=nowcasting_inflacao --cov-report=term-missing --cov-fail-under=70"
+testpaths = ["tests"]
+
