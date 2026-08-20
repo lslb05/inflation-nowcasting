@@ -4,8 +4,9 @@ import psycopg
 import pytest
 from testcontainers.community.postgres import PostgresContainer
 
-# Réplica mínima do schema public de series_vintage do dados-mercado-publico
-# (não importamos o schema de lá — este projeto só lê a interface pública).
+# Minimal replica of the public series_vintage schema from dados-mercado-publico
+# (we don't import that project's schema — this project only reads its public
+# interface).
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS series_vintage (
     fonte TEXT NOT NULL,
@@ -28,14 +29,14 @@ def _postgres_dsn() -> Iterator[str]:
 
 
 @pytest.fixture
-def conexao(_postgres_dsn: str) -> Iterator[psycopg.Connection]:
-    conexao = psycopg.connect(_postgres_dsn, autocommit=True)
-    conexao.execute(_SCHEMA)
-    conexao.execute("TRUNCATE TABLE series_vintage")
-    yield conexao
-    conexao.close()
+def connection(_postgres_dsn: str) -> Iterator[psycopg.Connection]:
+    connection = psycopg.connect(_postgres_dsn, autocommit=True)
+    connection.execute(_SCHEMA)
+    connection.execute("TRUNCATE TABLE series_vintage")
+    yield connection
+    connection.close()
 
 
 @pytest.fixture
-def dsn(_postgres_dsn: str, conexao: psycopg.Connection) -> str:
+def dsn(_postgres_dsn: str, connection: psycopg.Connection) -> str:
     return _postgres_dsn

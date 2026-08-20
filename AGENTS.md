@@ -9,7 +9,7 @@ architecture decisions by guessing.
 ## Stack and layout
 
 - Python 3.12 managed with `uv`.
-- Production code lives in `src/nowcasting_inflacao`.
+- Production code lives in `src/inflation_nowcasting`.
 - Tests live in `tests`; notebooks may import production code, never the reverse.
 - Use Ruff, strict mypy, pytest, Pydantic and Polars.
 - Configuration comes from environment variables. Never commit secrets.

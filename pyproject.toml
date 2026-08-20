@@ -1,5 +1,5 @@
 [project]
-name = "nowcasting-inflacao"
+name = "inflation-nowcasting"
 version = "0.1.0"
 description = "Replace with a one-line project description."
 readme = "README.md"
@@ -27,7 +27,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/nowcasting_inflacao"]
+packages = ["src/inflation_nowcasting"]
 
 [tool.ruff]
 target-version = "py312"
@@ -43,6 +43,6 @@ strict = true
 files = ["src", "tests"]
 
 [tool.pytest.ini_options]
-addopts = "--cov=nowcasting_inflacao --cov-report=term-missing --cov-fail-under=70"
+addopts = "--cov=inflation_nowcasting --cov-report=term-missing --cov-fail-under=70"
 testpaths = ["tests"]
 

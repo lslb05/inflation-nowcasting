@@ -1,56 +1,58 @@
-# Decisões
+# Decisions
 
-Registre somente decisões que alterem custo de mudança futuro.
+Record only decisions that change the future cost of change.
 
-## Modelo
+## Template
 
-### AAAA-MM-DD — Título
+### YYYY-MM-DD — Title
 
-- **Contexto:** qual restrição ou problema exigiu decisão.
-- **Decisão:** o caminho escolhido.
-- **Alternativas:** opções relevantes descartadas.
-- **Consequências:** ganhos, custos e gatilho para revisar.
+- **Context:** what constraint or problem required a decision.
+- **Decision:** the path chosen.
+- **Alternatives:** relevant options discarded.
+- **Consequences:** gains, costs and the trigger to revisit.
 
-### 2026-08-18 — Manter `CLAUDE.md` e `AGENTS.md` no repositório público
+### 2026-08-18 — Keep `CLAUDE.md` and `AGENTS.md` in the public repository
 
-- **Contexto:** os dois arquivos declaram que o repositório é construído com
-  apoio de agentes. A alternativa era ignorá-los no git para que o repositório
-  público não revelasse o fluxo de trabalho.
-- **Decisão:** manter os dois versionados e públicos.
-- **Alternativas:** ignorar `AGENTS.md` no `.gitignore`; mantê-lo apenas local.
-  Ambas quebram a delegação ao Codex, que lê esse arquivo do repositório — o
-  custo é funcional e imediato, o ganho é cosmético.
-- **Consequências:** o repositório declara o método em vez de escondê-lo, o que
-  também é verificável por quem lê. Rever se algum destino exigir o contrário.
+- **Context:** both files declare that the repository is built with agent
+  support. The alternative was ignoring them in git so the public
+  repository wouldn't reveal the workflow.
+- **Decision:** keep both versioned and public.
+- **Alternatives:** ignore `AGENTS.md` in `.gitignore`; keep it local only.
+  Both break delegation to Codex, which reads this file from the
+  repository — the cost is functional and immediate, the gain is cosmetic.
+- **Consequences:** the repository states the method instead of hiding it,
+  which is also verifiable by whoever reads it. Revisit if some destination
+  ever requires the opposite.
 
-### 2026-08-19 — Corte de cada mês vem da própria `data_publicacao` do CPI
+### 2026-08-19 — Each month's cutoff comes from the CPI's own `data_publicacao`
 
-- **Contexto:** simular "hoje" para cada mês do backtest exige saber quando o
-  CPI daquele mês foi divulgado. A alternativa óbvia é assumir um calendário
-  (ex.: "sempre dia 12 do mês seguinte"), mas a divulgação real do BLS varia
-  de data mês a mês.
-- **Decisão:** o corte de cada mês é `data_publicacao` da primeira safra do
-  CPI daquele mês no vintage (ALFRED), menos um dia. Vem do próprio dado.
-- **Alternativas:** calendário fixo hardcoded — mais simples de escrever,
-  mas silenciosamente errado em qualquer mês que a divulgação atrase, e não
-  detectável sem comparar contra o calendário real do BLS à parte.
-- **Consequências:** o corte de cada mês está sempre certo enquanto o
-  vintage do CPI estiver correto — sem manutenção de calendário. Custo: um
-  mês sem CPI ainda ingerido não entra no backtest (é descartado, não
-  aproximado), o que é o comportamento certo, não uma limitação a esconder.
+- **Context:** simulating "today" for each backtest month requires knowing
+  when that month's CPI was released. The obvious alternative is assuming a
+  calendar (e.g. "always the 12th of the following month"), but the BLS's
+  actual release date varies month to month.
+- **Decision:** each month's cutoff is the `data_publicacao` of that
+  month's first CPI vintage (ALFRED), minus one day. It comes from the data
+  itself.
+- **Alternatives:** a hardcoded fixed calendar — simpler to write, but
+  silently wrong in any month the release runs late, and undetectable
+  without separately comparing against the real BLS calendar.
+- **Consequences:** each month's cutoff is always correct as long as the
+  CPI vintage is correct — no calendar maintenance. Cost: a month whose CPI
+  hasn't been ingested yet is dropped from the backtest (not approximated),
+  which is the right behavior, not a hidden limitation.
 
-### 2026-08-19 — `numpy.linalg.lstsq` em vez de `statsmodels`
+### 2026-08-19 — `numpy.linalg.lstsq` instead of `statsmodels`
 
-- **Contexto:** o bridge model precisa de uma regressão linear multivariada
-  (intercepto + 3 regressores). `statsmodels` é o padrão de mercado para
-  regressão em Python, mas traz diagnóstico estatístico (p-valor, R²,
-  resíduo) que este corte não usa — só o coeficiente ajustado, pra prever.
-- **Decisão:** `numpy.linalg.lstsq` sobre a matriz de desenho com coluna de
-  intercepto — mínimos quadrados puro, sem a camada de inferência estatística.
-- **Alternativas:** `statsmodels.OLS` — mais completo, mas dependência nova
-  pesada pra um projeto que não relata p-valor nem faz teste de hipótese
-  sobre os coeficientes neste corte.
-- **Consequências:** menos dependência; custo é que se um corte futuro
-  precisar de diagnóstico de significância dos regressores (ex.: para
-  justificar descartar um deles), a migração para `statsmodels` é o gatilho
-  certo — não vale adicionar agora por especulação.
+- **Context:** the bridge model needs a multivariate linear regression
+  (intercept + 3 regressors). `statsmodels` is the market standard for
+  regression in Python, but brings statistical diagnostics (p-value, R²,
+  residuals) this cut doesn't use — only the fitted coefficient, to predict.
+- **Decision:** `numpy.linalg.lstsq` on the design matrix with an intercept
+  column — plain least squares, without the statistical-inference layer.
+- **Alternatives:** `statsmodels.OLS` — more complete, but a heavy new
+  dependency for a project that neither reports p-values nor tests
+  hypotheses on the coefficients in this cut.
+- **Consequences:** fewer dependencies; the cost is that if a future cut
+  needs significance diagnostics for the regressors (e.g. to justify
+  dropping one), migrating to `statsmodels` is the right trigger — not
+  worth adding now speculatively.

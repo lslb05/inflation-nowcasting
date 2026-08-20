@@ -3,125 +3,124 @@ from datetime import date
 import psycopg
 import pytest
 
-from nowcasting_inflacao.backtest import backtest, erro_absoluto_medio
+from inflation_nowcasting.backtest import backtest, mean_absolute_error
 
 _FAR_FUTURE = date(9999, 12, 31)
 
 
-def _mes_seguinte(mes: date) -> date:
-    return date(mes.year + mes.month // 12, mes.month % 12 + 1, 1)
+def _next_month(month: date) -> date:
+    return date(month.year + month.month // 12, month.month % 12 + 1, 1)
 
 
-def _inserir(
-    conexao: psycopg.Connection,
+def _insert(
+    connection: psycopg.Connection,
     *,
-    serie: str,
-    data_evento: date,
-    data_publicacao: date,
-    vigente_ate: date,
-    valor: float,
+    series: str,
+    event_date: date,
+    release_date: date,
+    valid_until: date,
+    value: float,
 ) -> None:
-    conexao.execute(
+    connection.execute(
         """
         INSERT INTO series_vintage
             (fonte, serie, data_evento, data_publicacao, vigente_ate, valor,
              data_disponibilidade)
         VALUES ('fred', %s, %s, %s, %s, %s, %s)
         """,
-        (serie, data_evento, data_publicacao, vigente_ate, valor, data_publicacao),
+        (series, event_date, release_date, valid_until, value, release_date),
     )
 
 
-def _popular_cenario(conexao: psycopg.Connection, *, n_meses: int) -> list[date]:
-    """CPI e regressores sintéticos, sem revisão, com tendência determinística."""
-    mes = date(2023, 1, 1)
-    meses = []
+def _populate_scenario(connection: psycopg.Connection, *, n_months: int) -> list[date]:
+    """Synthetic CPI and regressors, no revisions, with a deterministic trend."""
+    month = date(2023, 1, 1)
+    months = []
     cpi = 300.0
-    for i in range(n_meses):
-        pub_cpi = date(mes.year, mes.month, 12)
-        pub_cpi = _mes_seguinte(mes).replace(day=12)
+    for i in range(n_months):
+        release = _next_month(month).replace(day=12)
         cpi += 0.5 + 0.01 * i
-        _inserir(
-            conexao,
-            serie="CPIAUCSL",
-            data_evento=mes,
-            data_publicacao=pub_cpi,
-            vigente_ate=_FAR_FUTURE,
-            valor=cpi,
+        _insert(
+            connection,
+            series="CPIAUCSL",
+            event_date=month,
+            release_date=release,
+            valid_until=_FAR_FUTURE,
+            value=cpi,
         )
-        for serie, base in (("T10YIE", 2.0), ("DCOILWTICO", 80.0), ("MICH", 3.0)):
-            _inserir(
-                conexao,
-                serie=serie,
-                data_evento=mes,
-                data_publicacao=mes,
-                vigente_ate=_FAR_FUTURE,
-                valor=base + 0.05 * i,
+        for series, base in (("T10YIE", 2.0), ("DCOILWTICO", 80.0), ("MICH", 3.0)):
+            _insert(
+                connection,
+                series=series,
+                event_date=month,
+                release_date=month,
+                valid_until=_FAR_FUTURE,
+                value=base + 0.05 * i,
             )
-        meses.append(mes)
-        mes = _mes_seguinte(mes)
-    return meses
+        months.append(month)
+        month = _next_month(month)
+    return months
 
 
-def test_backtest_produz_um_resultado_por_mes_com_treino_suficiente(
-    conexao: psycopg.Connection,
+def test_backtest_produces_one_result_per_month_with_enough_training(
+    connection: psycopg.Connection,
 ) -> None:
-    meses = _popular_cenario(conexao, n_meses=12)
+    months = _populate_scenario(connection, n_months=12)
 
-    resultados = backtest(conexao, de=meses[8], ate=meses[8], treino_minimo=5)
+    results = backtest(connection, start=months[8], end=months[8], min_training=5)
 
-    assert len(resultados) == 1
-    assert resultados[0].mes == meses[8]
+    assert len(results) == 1
+    assert results[0].month == months[8]
 
 
-def test_mae_do_baseline_e_calculado_sobre_o_periodo(
-    conexao: psycopg.Connection,
+def test_baseline_mae_is_computed_over_the_period(
+    connection: psycopg.Connection,
 ) -> None:
-    meses = _popular_cenario(conexao, n_meses=12)
+    months = _populate_scenario(connection, n_months=12)
 
-    # Índice 6 fica de fora: só há 4 meses de treino disponíveis antes dele
-    # (índices 2-5), abaixo do treino_minimo=5. 7, 8 e 9 têm treino suficiente.
-    resultados = backtest(conexao, de=meses[6], ate=meses[9], treino_minimo=5)
-    mae_nowcast, mae_baseline = erro_absoluto_medio(resultados)
+    # Index 6 is left out: only 4 training months are available before it
+    # (indices 2-5), below min_training=5. 7, 8 and 9 have enough training.
+    results = backtest(connection, start=months[6], end=months[9], min_training=5)
+    mae_nowcast, mae_baseline = mean_absolute_error(results)
 
-    assert len(resultados) == 3
+    assert len(results) == 3
     assert mae_nowcast >= 0
     assert mae_baseline >= 0
 
 
-def test_dado_publicado_depois_do_corte_nao_muda_o_nowcast_do_passado(
-    conexao: psycopg.Connection,
+def test_data_published_after_the_cutoff_does_not_change_a_past_nowcast(
+    connection: psycopg.Connection,
 ) -> None:
-    """O teste que mais importa neste projeto inteiro: inserir uma leitura de
-    regressor com `data_publicacao` depois do corte do mês testado não pode
-    alterar o nowcast já calculado para aquele mês — se alterar, o pipeline
-    está vazando informação futura para dentro do backtest.
+    """The single most important test in this project: inserting a regressor
+    reading with `data_publicacao` after the tested month's cutoff must not
+    change the nowcast already computed for that month — if it does, the
+    pipeline is leaking future information into the backtest.
     """
-    meses = _popular_cenario(conexao, n_meses=14)
-    mes_testado = meses[10]
+    months = _populate_scenario(connection, n_months=14)
+    tested_month = months[10]
 
-    resultado_antes = backtest(
-        conexao, de=mes_testado, ate=mes_testado, treino_minimo=5
+    result_before = backtest(
+        connection, start=tested_month, end=tested_month, min_training=5
     )[0]
 
-    # "Revisão" do petróleo do mês seguinte ao testado, publicada bem depois
-    # do corte de `mes_testado` (dia 11 do mês seguinte) — não pode
-    # influenciar o nowcast já calculado.
-    mes_seguinte = _mes_seguinte(mes_testado)
-    corte_do_mes_testado = mes_seguinte.replace(day=11)
-    _inserir(
-        conexao,
-        serie="DCOILWTICO",
-        data_evento=mes_seguinte,
-        data_publicacao=corte_do_mes_testado.replace(day=28),
-        vigente_ate=_FAR_FUTURE,
-        valor=99999.0,
+    # A "revision" of next month's oil price, published well after the
+    # tested month's cutoff (day 11 of the following month) — must not
+    # influence the nowcast already computed.
+    next_month = _next_month(tested_month)
+    tested_month_cutoff = next_month.replace(day=11)
+    _insert(
+        connection,
+        series="DCOILWTICO",
+        event_date=next_month,
+        release_date=tested_month_cutoff.replace(day=28),
+        valid_until=_FAR_FUTURE,
+        value=99999.0,
     )
 
-    resultado_depois = backtest(
-        conexao, de=mes_testado, ate=mes_testado, treino_minimo=5
+    result_after = backtest(
+        connection, start=tested_month, end=tested_month, min_training=5
     )[0]
 
-    assert resultado_depois.nowcast == pytest.approx(resultado_antes.nowcast)
-    assert resultado_depois.realizado == pytest.approx(resultado_antes.realizado)
-    assert resultado_depois.baseline == pytest.approx(resultado_antes.baseline)
+    assert result_after.nowcast == pytest.approx(result_before.nowcast)
+    assert result_after.actual == pytest.approx(result_before.actual)
+    assert result_after.baseline == pytest.approx(result_before.baseline)
