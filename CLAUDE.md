@@ -15,7 +15,7 @@ repository.
   nowcast using only data with `data_publicacao <=` that month's simulated
   cutoff, compared to the first published value (not the revision), with
   MAE against a naive baseline (repeating the prior month's change).
-- **Allowed data source:** FRED via Postgres from `dados-mercado-publico`
+- **Allowed data source:** FRED via Postgres from `public-market-data`
   (`series_vintage`) — `CPIAUCSL` (target), `T10YIE` (10y breakeven, daily),
   `DCOILWTICO` (WTI, daily), `MICH` (Michigan expectations, monthly). Each
   month's cutoff date is the CPI's own `data_publicacao` in that vintage,
@@ -68,7 +68,7 @@ tool. Don't change `user.name` or `user.email`.
 
 - **Decided:** first cut delivered — a point-in-time walk-forward backtest
   of m/m CPI (OLS via `numpy.linalg.lstsq`, 3 regressors) against a naive
-  baseline, reading `series_vintage` from `dados-mercado-publico`. Each
+  baseline, reading `series_vintage` from `public-market-data`. Each
   month's cutoff comes from the CPI's real `data_publicacao`, not an
   assumed calendar.
 - **Pending:** never run against real FRED data — an API key is needed to

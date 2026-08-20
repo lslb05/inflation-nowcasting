@@ -4,7 +4,7 @@ import psycopg
 import pytest
 from testcontainers.community.postgres import PostgresContainer
 
-# Minimal replica of the public series_vintage schema from dados-mercado-publico
+# Minimal replica of the public series_vintage schema from public-market-data
 # (we don't import that project's schema — this project only reads its public
 # interface).
 _SCHEMA = """

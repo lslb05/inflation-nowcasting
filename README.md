@@ -47,7 +47,7 @@ have (see Limitations).
 - **Decision:** it's possible to measure whether a simple bridge model beats
   a naive baseline for m/m CPI, without the result being inflated by a leak.
 - **Input:** FRED via Postgres from
-  [`dados-mercado-publico`](../dados-mercado-publico) —
+  [`public-market-data`](../public-market-data) —
   `CPIAUCSL` (target), `T10YIE`, `DCOILWTICO`, `MICH` (regressors), through
   the public `series_vintage` interface and the same
   `DADOS_MERCADO_PUBLICO_POSTGRES_DSN` variable `vol-implicita-spx` already
@@ -58,7 +58,7 @@ have (see Limitations).
 ## Architecture
 
 ```
-Postgres (dados-mercado-publico, series_vintage)
+Postgres (public-market-data, series_vintage)
     │
     ▼
 point_in_time.py   every read filters by data_publicacao <= cutoff
@@ -94,16 +94,16 @@ in `statsmodels` as a dependency just for that wasn't worth the cost.
 ## Run locally
 
 Requirements: Python 3.12, `uv`, Docker (for the ephemeral test Postgres),
-and [`dados-mercado-publico`](../dados-mercado-publico) running with all
+and [`public-market-data`](../public-market-data) running with all
 four series ingested:
 
 ```bash
-# in dados-mercado-publico:
+# in public-market-data:
 docker compose up -d
-uv run python -m dados_mercado_publico ingerir --fonte fred --serie CPIAUCSL
-uv run python -m dados_mercado_publico ingerir --fonte fred --serie T10YIE
-uv run python -m dados_mercado_publico ingerir --fonte fred --serie DCOILWTICO
-uv run python -m dados_mercado_publico ingerir --fonte fred --serie MICH
+uv run python -m public_market_data ingest --source fred --series CPIAUCSL
+uv run python -m public_market_data ingest --source fred --series T10YIE
+uv run python -m public_market_data ingest --source fred --series DCOILWTICO
+uv run python -m public_market_data ingest --source fred --series MICH
 ```
 
 ```bash
@@ -141,7 +141,7 @@ src/inflation_nowcasting/
   FRED API key this development environment doesn't have. All the
   point-in-time logic is validated with controlled synthetic data
   (`tests/`) — real Postgres behavior depends only on
-  `dados-mercado-publico`, already tested separately, but the end-to-end
+  `public-market-data`, already tested separately, but the end-to-end
   path with real CPI has never run here.
 - Simple bridge equation (OLS, 3 regressors, no variable selection or
   regularization) — not the state of the art for nowcasting (dynamic factor

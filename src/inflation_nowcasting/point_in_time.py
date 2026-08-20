@@ -1,4 +1,4 @@
-"""Point-in-time reads of the dados-mercado-publico public interface.
+"""Point-in-time reads of the public-market-data public interface.
 
 Every function here filters by `data_publicacao <= cutoff`: it's that clause
 — not a higher-level precaution — that stops a regressor published after the

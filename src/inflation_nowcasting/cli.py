@@ -40,7 +40,7 @@ def main(argv: list[str] | None = None) -> int:
         connection = psycopg.connect(config.market_data_dsn)
     except psycopg.OperationalError as error:
         print(
-            f"could not connect to dados-mercado-publico's Postgres: {error}",
+            f"could not connect to public-market-data's Postgres: {error}",
             file=sys.stderr,
         )
         return 2
@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
             series = ", ".join(_REQUIRED_SERIES)
             print(
                 "no month in the interval has enough data. Ingested in "
-                f"dados-mercado-publico: {series}? And is there at least "
+                f"public-market-data: {series}? And is there at least "
                 f"{args.min_training} months of history before --start?",
                 file=sys.stderr,
             )

@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     )
 
     log_level: str = "INFO"
-    # No prefix on purpose: this is the same variable dados-mercado-publico and
+    # No prefix on purpose: this is the same variable public-market-data and
     # vol-implicita-spx use — one DSN configures all three projects.
     market_data_dsn: str = Field(
         default="postgresql://dados:dados@localhost:5433/dados_mercado_publico",
